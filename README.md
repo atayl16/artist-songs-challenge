@@ -33,9 +33,8 @@ git clone <your-repo-url>
 cd artist-songs-challenge
 
 # 2. Setup environment files
-cp backend/.env.example backend/.env
-cp frontend/.env.example frontend/.env.local
-# Edit backend/.env and add your GENIUS_API_KEY from https://genius.com/api-clients
+cp .env.example .env
+# Edit .env and add your GENIUS_API_KEY from https://genius.com/api-clients
 
 # 3. Start everything
 docker-compose up
