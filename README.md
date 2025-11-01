@@ -2,6 +2,19 @@
 
 A Rails + React application that searches for songs by artist using the Genius API.
 
+## Table of Contents
+
+- [Features](#features)
+- [Quick Start (Docker)](#quick-start-docker---recommended)
+- [Manual Setup](#manual-setup-without-docker)
+- [Architecture](#architecture)
+- [API Documentation](#api-documentation)
+- [Design Decisions](#design-decisions)
+- [Production Considerations](#production-considerations)
+- [Troubleshooting](#troubleshooting)
+
+---
+
 ## Features
 
 - 🔍 Search for any artist
