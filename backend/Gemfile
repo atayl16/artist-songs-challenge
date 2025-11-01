@@ -1,0 +1,38 @@
+source "https://rubygems.org"
+
+ruby "3.3.4"
+
+# Core
+gem "rails", "~> 8.1.1"
+gem "puma", ">= 5.0"
+
+# API essentials
+gem "rack-cors"
+gem "faraday", "~> 2.7"
+gem "faraday-retry"
+gem "dotenv-rails"
+
+# Caching & Performance
+gem "redis", "~> 5.0"
+gem "hiredis-client"
+gem "rack-attack"
+
+# Boot optimization
+gem "bootsnap", require: false
+
+# Windows timezone support
+gem "tzinfo-data", platforms: %i[ windows jruby ]
+
+group :development, :test do
+  gem "debug", platforms: %i[ mri windows ], require: "debug/prelude"
+  gem "rspec-rails"
+  gem "pry-rails"
+  gem "rubocop-rails-omakase", require: false
+  gem "brakeman", require: false
+end
+
+group :test do
+  gem "webmock"
+  gem "vcr"
+  gem "mock_redis"
+end
