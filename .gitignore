@@ -1,0 +1,61 @@
+# Private/Interview files
+INTERVIEW_PREP.md
+.claude/
+
+# Environment (examples are committed)
+.env
+.env.local
+.env.*.local
+.env.test
+backend/.env
+backend/.env.*.local
+frontend/.env.local
+frontend/.env.*.local
+!.env.example
+!backend/.env.example
+!frontend/.env.example
+
+# OS / Editor
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.eslintcache
+.byebug_history
+
+# Logs & temp
+*.log
+npm-debug.log*
+yarn-*.log*
+backend/log/
+backend/tmp/
+
+# Node (any packages)
+node_modules/
+
+# Build outputs
+frontend/build/
+build/
+.pnp
+.pnp.js
+
+# Ruby (backend)
+backend/.bundle/
+backend/vendor/bundle/
+
+# Testing / coverage
+coverage/
+.nyc_output/
+.rspec_status
+
+# VCR
+backend/spec/vcr_cassettes/
+
+# Redis dumps
+dump.rdb
+*.rdb
