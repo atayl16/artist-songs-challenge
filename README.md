@@ -206,10 +206,19 @@ curl "http://localhost:3001/api/v1/artists/Taylor%20Swift/songs?page=1&per_page=
   },
   "meta": {
     "fetched_at": "2024-10-31T12:00:00Z",
-    "cached": false
+    "cached": false,
+    "stale": false,
+    "api_unavailable": false
   }
 }
 ```
+
+**Metadata Fields:**
+- `cached`: `true` if songs were served from cache (not freshly fetched from Genius API)
+- `stale`: `true` if data is being served from cache during an API outage (normally `false`)
+- `api_unavailable`: `true` if Genius API is currently unreachable but cached data was available (normally `false`)
+
+When the Genius API is down but cached data exists, responses will have `cached: true, stale: true, api_unavailable: true`. This allows clients to display a warning to users while still providing results.
 
 ### Error Responses
 
