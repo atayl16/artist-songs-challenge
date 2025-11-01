@@ -1,0 +1,57 @@
+AllCops:
+  NewCops: enable
+  TargetRubyVersion: 3.3
+  SuggestExtensions: false
+  Exclude:
+    - 'bin/**/*'
+    - 'db/schema.rb'
+    - 'db/queue_schema.rb'
+    - 'db/cache_schema.rb'
+    - 'db/cable_schema.rb'
+    - 'node_modules/**/*'
+    - 'tmp/**/*'
+    - 'vendor/**/*'
+
+# Disable documentation requirement for controllers and models
+Style/Documentation:
+  Enabled: false
+
+# Allow longer methods for complex logic
+Metrics/MethodLength:
+  Max: 26
+  Exclude:
+    - 'spec/**/*'
+
+# Allow longer classes for service objects
+Metrics/ClassLength:
+  Max: 200
+  Exclude:
+    - 'spec/**/*'
+
+# Allow higher complexity for service methods
+Metrics/AbcSize:
+  Max: 35
+  Exclude:
+    - 'spec/**/*'
+
+# Longer lines are okay for readability
+Layout/LineLength:
+  Max: 140
+  Exclude:
+    - 'spec/**/*'
+
+# Test files can have long blocks
+Metrics/BlockLength:
+  Exclude:
+    - 'spec/**/*'
+    - 'config/**/*'
+    - 'db/**/*'
+
+# Numeric predicates - personal preference
+Style/NumericPredicate:
+  Enabled: false
+
+# Allow ENV['KEY'] in VCR config where we need to handle nil gracefully
+Style/FetchEnvVar:
+  Exclude:
+    - 'spec/support/vcr.rb'
