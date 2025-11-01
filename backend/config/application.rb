@@ -1,17 +1,19 @@
-require_relative "boot"
+# frozen_string_literal: true
 
-require "rails"
+require_relative 'boot'
+
+require 'rails'
 # Pick the frameworks you want:
-require "active_model/railtie"
-require "active_job/railtie"
+require 'active_model/railtie'
+require 'active_job/railtie'
 # require "active_record/railtie"
 # require "active_storage/engine"
-require "action_controller/railtie"
+require 'action_controller/railtie'
 # require "action_mailer/railtie"
 # require "action_mailbox/engine"
 # require "action_text/engine"
-require "action_view/railtie"
-require "action_cable/engine"
+require 'action_view/railtie'
+require 'action_cable/engine'
 # require "rails/test_unit/railtie"
 
 # Require the gems listed in Gemfile, including any gems
@@ -43,10 +45,10 @@ module Backend
 
     # Security headers
     config.action_dispatch.default_headers = {
-      "X-Frame-Options" => "DENY",
-      "X-Content-Type-Options" => "nosniff",
-      "X-XSS-Protection" => "1; mode=block",
-      "Referrer-Policy" => "strict-origin-when-cross-origin"
+      'X-Frame-Options' => 'DENY',
+      'X-Content-Type-Options' => 'nosniff',
+      'X-XSS-Protection' => '1; mode=block',
+      'Referrer-Policy' => 'strict-origin-when-cross-origin'
     }
   end
 end

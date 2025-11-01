@@ -1,38 +1,40 @@
-source "https://rubygems.org"
+# frozen_string_literal: true
 
-ruby "3.3.4"
+source 'https://rubygems.org'
+
+ruby '3.3.4'
 
 # Core
-gem "rails", "~> 8.1.1"
-gem "puma", ">= 5.0"
+gem 'puma', '>= 5.0'
+gem 'rails', '~> 8.1.1'
 
 # API essentials
-gem "rack-cors"
-gem "faraday", "~> 2.7"
-gem "faraday-retry"
-gem "dotenv-rails"
+gem 'dotenv-rails'
+gem 'faraday', '~> 2.7'
+gem 'faraday-retry'
+gem 'rack-cors'
 
 # Caching & Performance
-gem "redis", "~> 5.0"
-gem "hiredis-client"
-gem "rack-attack"
+gem 'hiredis-client'
+gem 'rack-attack'
+gem 'redis', '~> 5.0'
 
 # Boot optimization
-gem "bootsnap", require: false
+gem 'bootsnap', require: false
 
 # Windows timezone support
-gem "tzinfo-data", platforms: %i[ windows jruby ]
+gem 'tzinfo-data', platforms: %i[windows jruby]
 
 group :development, :test do
-  gem "debug", platforms: %i[ mri windows ], require: "debug/prelude"
-  gem "rspec-rails"
-  gem "pry-rails"
-  gem "rubocop-rails-omakase", require: false
-  gem "brakeman", require: false
+  gem 'brakeman', require: false
+  gem 'debug', platforms: %i[mri windows], require: 'debug/prelude'
+  gem 'pry-rails'
+  gem 'rspec-rails'
+  gem 'rubocop-rails-omakase', require: false
 end
 
 group :test do
-  gem "webmock"
-  gem "vcr"
-  gem "mock_redis"
+  gem 'mock_redis'
+  gem 'vcr'
+  gem 'webmock'
 end

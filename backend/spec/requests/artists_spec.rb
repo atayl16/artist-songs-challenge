@@ -1,14 +1,19 @@
+# frozen_string_literal: true
+
 require 'rails_helper'
 
 RSpec.describe 'Artists API', type: :request do
   # Helper method to stub service responses for parameter tests
   def stub_service_response(per_page:)
     allow_any_instance_of(GeniusService).to receive(:search_artist_songs).and_return({
-      artist: { name: 'Drake', id: 1 },
-      songs: [],
-      pagination: { page: 1, per_page: per_page, has_next: false },
-      meta: { fetched_at: Time.current, cached: false }
-    })
+                                                                                       artist: { name: 'Drake', id: 1 },
+                                                                                       songs: [],
+                                                                                       pagination: { page: 1,
+                                                                                                     per_page: per_page, has_next: false },
+                                                                                       meta: {
+                                                                                         fetched_at: Time.current, cached: false
+                                                                                       }
+                                                                                     })
   end
 
   describe 'GET /api/v1/artists/:name/songs' do
@@ -144,11 +149,15 @@ RSpec.describe 'Artists API', type: :request do
       it 'returns 429 after exceeding rate limit' do
         # Stub the service to avoid VCR/API calls
         allow_any_instance_of(GeniusService).to receive(:search_artist_songs).and_return({
-          artist: { name: 'Drake', id: 1 },
-          songs: [],
-          pagination: { page: 1, per_page: 50, has_next: false },
-          meta: { fetched_at: Time.current, cached: false }
-        })
+                                                                                           artist: { name: 'Drake',
+                                                                                                     id: 1 },
+                                                                                           songs: [],
+                                                                                           pagination: { page: 1,
+                                                                                                         per_page: 50, has_next: false },
+                                                                                           meta: {
+                                                                                             fetched_at: Time.current, cached: false
+                                                                                           }
+                                                                                         })
 
         # Rack::Attack throttles to 10 requests per minute for song searches
         # Make 10 successful requests

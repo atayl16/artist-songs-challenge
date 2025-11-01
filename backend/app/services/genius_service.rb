@@ -1,10 +1,12 @@
+# frozen_string_literal: true
+
 class GeniusService
-  BASE_URL = ENV.fetch("GENIUS_API_BASE_URL", "https://api.genius.com")
+  BASE_URL = ENV.fetch('GENIUS_API_BASE_URL', 'https://api.genius.com')
   TIMEOUT = 10
   CACHE_TTL = 1.hour.to_i
-  NAME_MAPPING_CACHE_TTL = 24.hours.to_i  # Artist name→ID mappings are stable
-  PER_PAGE = 50  # Genius API maximum
-  CACHE_VERSION = "v1"  # Increment when response format changes
+  NAME_MAPPING_CACHE_TTL = 24.hours.to_i # Artist name→ID mappings are stable
+  PER_PAGE = 50 # Genius API maximum
+  CACHE_VERSION = 'v1' # Increment when response format changes
 
   class ArtistNotFoundError < StandardError; end
   class ApiError < StandardError; end
@@ -12,9 +14,10 @@ class GeniusService
 
   def initialize
     @client = Faraday.new(BASE_URL) do |f|
-      f.request :authorization, "Bearer", ENV.fetch("GENIUS_API_KEY")
+      f.request :authorization, 'Bearer', ENV.fetch('GENIUS_API_KEY')
       f.request :json
-      f.request :retry, max: 3, interval: 0.5, backoff_factor: 2, exceptions: [ Faraday::TimeoutError, Faraday::ConnectionFailed ]
+      f.request :retry, max: 3, interval: 0.5, backoff_factor: 2,
+                        exceptions: [Faraday::TimeoutError, Faraday::ConnectionFailed]
       f.response :raise_error
       f.adapter Faraday.default_adapter
 
@@ -38,8 +41,8 @@ class GeniusService
         begin
           artist = find_artist(artist_name)
           # API is up, update mapping and return fresh artist data with cached songs
-          store_artist_id_mapping(artist_name, artist["id"], artist["name"])
-          return cached_songs.merge(artist: { name: artist["name"], id: artist["id"] })
+          store_artist_id_mapping(artist_name, artist['id'], artist['name'])
+          return cached_songs.merge(artist: { name: artist['name'], id: artist['id'] })
         rescue ApiError, TimeoutError => e
           # API is down, serve stale cache with warning flags
           Rails.logger.warn("API unavailable, serving stale cache: #{e.message}")
@@ -55,29 +58,29 @@ class GeniusService
     artist = find_artist(artist_name)
 
     # Store name→ID mapping for future resilience
-    store_artist_id_mapping(artist_name, artist["id"], artist["name"])
+    store_artist_id_mapping(artist_name, artist['id'], artist['name'])
 
     # Check cache by artist ID (prevents collisions for artists with same name)
-    cached = fetch_from_cache(artist["id"], page, per_page)
-    return cached.merge(artist: { name: artist["name"], id: artist["id"] }) if cached
+    cached = fetch_from_cache(artist['id'], page, per_page)
+    return cached.merge(artist: { name: artist['name'], id: artist['id'] }) if cached
 
     # Fetch from API
-    songs_data = fetch_songs_page(artist["id"], page, per_page)
+    songs_data = fetch_songs_page(artist['id'], page, per_page)
 
     result = format_response(artist, songs_data, page, per_page)
-    store_in_cache(artist["id"], page, per_page, result)
+    store_in_cache(artist['id'], page, per_page, result)
 
     result
   end
 
   private
 
-    def validate_input!(name, page, per_page)
-      raise ArgumentError, "Artist name required" if name.blank?
-      raise ArgumentError, "Artist name too long (max 100 chars)" if name.length > 100
-      raise ArgumentError, "Page must be positive" if page < 1
-      raise ArgumentError, "Per page must be 1-#{PER_PAGE}" unless (1..PER_PAGE).cover?(per_page)
-    end
+  def validate_input!(name, page, per_page)
+    raise ArgumentError, 'Artist name required' if name.blank?
+    raise ArgumentError, 'Artist name too long (max 100 chars)' if name.length > 100
+    raise ArgumentError, 'Page must be positive' if page < 1
+    raise ArgumentError, "Per page must be 1-#{PER_PAGE}" unless (1..PER_PAGE).cover?(per_page)
+  end
 
   def cache_key(artist_id, page, per_page)
     # Cache by artist ID to prevent collisions (e.g., multiple artists with same name)
@@ -92,15 +95,15 @@ class GeniusService
     result = cached_data.deep_symbolize_keys
     result[:meta][:cached] = true
     result
-  rescue => e
+  rescue StandardError => e
     Rails.logger.warn("Cache read error: #{e.message}")
-    nil  # Graceful degradation
+    nil # Graceful degradation
   end
 
   def store_in_cache(artist_id, page, per_page, data)
     key = cache_key(artist_id, page, per_page)
     Rails.cache.write(key, data, expires_in: CACHE_TTL)
-  rescue => e
+  rescue StandardError => e
     Rails.logger.warn("Failed to cache: #{e.message}")
     # Don't fail the request if caching fails
   end
@@ -115,7 +118,7 @@ class GeniusService
   def get_cached_artist_id(artist_name)
     key = artist_name_mapping_key(artist_name)
     Rails.cache.read(key)&.deep_symbolize_keys
-  rescue => e
+  rescue StandardError => e
     Rails.logger.warn("Failed to read name mapping cache: #{e.message}")
     nil
   end
@@ -124,74 +127,74 @@ class GeniusService
     key = artist_name_mapping_key(artist_name)
     mapping = { artist_id: artist_id, artist_name: canonical_name }
     Rails.cache.write(key, mapping, expires_in: NAME_MAPPING_CACHE_TTL)
-  rescue => e
+  rescue StandardError => e
     Rails.logger.warn("Failed to cache name mapping: #{e.message}")
     # Don't fail the request if caching fails
   end
 
   def find_artist(name)
-    response = @client.get("/search", q: name)
+    response = @client.get('/search', q: name)
     data = JSON.parse(response.body)
-    hits = data.dig("response", "hits") || []
+    hits = data.dig('response', 'hits') || []
 
     raise ArtistNotFoundError, "Artist '#{name}' not found" if hits.empty?
 
     # Try exact match first (case-insensitive)
-    artist_hit = hits.find { |hit|
-      hit.dig("result", "primary_artist", "name")&.downcase == name.downcase
-    }
+    artist_hit = hits.find do |hit|
+      hit.dig('result', 'primary_artist', 'name')&.downcase == name.downcase
+    end
 
     # Fall back to first result if no exact match (Genius search is usually accurate)
     artist_hit ||= hits.first
 
-    artist_hit.dig("result", "primary_artist")
+    artist_hit.dig('result', 'primary_artist')
   rescue JSON::ParserError => e
     Rails.logger.error("Failed to parse Genius API response: #{e.message}")
-    raise ApiError, "Invalid response from Genius API"
+    raise ApiError, 'Invalid response from Genius API'
   rescue Faraday::ClientError => e
     handle_client_error(e)
   rescue Faraday::TimeoutError
     raise TimeoutError, "Request timed out after #{TIMEOUT} seconds"
   rescue Faraday::ServerError => e
     Rails.logger.error("Genius server error: #{e.message}")
-    raise ApiError, "Genius API temporarily unavailable"
+    raise ApiError, 'Genius API temporarily unavailable'
   rescue Faraday::Error => e
     Rails.logger.error("Genius API error: #{e.class} - #{e.message}")
-    raise ApiError, "Unable to connect to Genius API"
+    raise ApiError, 'Unable to connect to Genius API'
   end
 
   def fetch_songs_page(artist_id, page, per_page)
     response = @client.get("/artists/#{artist_id}/songs", {
-      per_page: per_page,
-      page: page,
-      sort: "popularity"
-    })
+                             per_page: per_page,
+                             page: page,
+                             sort: 'popularity'
+                           })
 
     data = JSON.parse(response.body)
-    songs = data.dig("response", "songs") || []
-    next_page = data.dig("response", "next_page")
+    songs = data.dig('response', 'songs') || []
+    next_page = data.dig('response', 'next_page')
 
     { songs: songs, has_next: next_page.present? }
   rescue JSON::ParserError => e
     Rails.logger.error("Failed to parse Genius API response: #{e.message}")
-    raise ApiError, "Invalid response from Genius API"
+    raise ApiError, 'Invalid response from Genius API'
   rescue Faraday::ClientError => e
     handle_client_error(e)
   rescue Faraday::TimeoutError
     raise TimeoutError, "Request timed out after #{TIMEOUT} seconds"
   rescue Faraday::ServerError => e
     Rails.logger.error("Genius server error: #{e.message}")
-    raise ApiError, "Genius API temporarily unavailable"
+    raise ApiError, 'Genius API temporarily unavailable'
   rescue Faraday::Error => e
     Rails.logger.error("Genius API error: #{e.class} - #{e.message}")
-    raise ApiError, "Unable to connect to Genius API"
+    raise ApiError, 'Unable to connect to Genius API'
   end
 
   def handle_client_error(error)
     status = error.response[:status]
     case status
-    when 401 then raise ApiError, "Invalid API credentials"
-    when 429 then raise ApiError, "Rate limit exceeded"
+    when 401 then raise ApiError, 'Invalid API credentials'
+    when 429 then raise ApiError, 'Rate limit exceeded'
     else raise ApiError, "API request failed (#{status})"
     end
   end
@@ -199,8 +202,8 @@ class GeniusService
   def format_response(artist, songs_data, page, per_page)
     {
       artist: {
-        name: artist["name"],
-        id: artist["id"]
+        name: artist['name'],
+        id: artist['id']
       },
       songs: format_songs(songs_data[:songs]),
       pagination: {
@@ -220,10 +223,10 @@ class GeniusService
   def format_songs(songs)
     songs.map do |song|
       {
-        id: song["id"],
-        title: song["title"],
-        url: song["url"],
-        release_date: song["release_date_for_display"]
+        id: song['id'],
+        title: song['title'],
+        url: song['url'],
+        release_date: song['release_date_for_display']
       }
     end
   end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'rails_helper'
 
 RSpec.describe GeniusService do
@@ -46,47 +48,47 @@ RSpec.describe GeniusService do
 
     context 'with invalid artist' do
       it 'raises ArtistNotFoundError', :vcr do
-        expect {
+        expect do
           service.search_artist_songs('asdfghjklzxcvbnm')
-        }.to raise_error(GeniusService::ArtistNotFoundError, /not found/)
+        end.to raise_error(GeniusService::ArtistNotFoundError, /not found/)
       end
     end
 
     context 'with invalid input' do
       it 'raises ArgumentError for blank name' do
-        expect {
+        expect do
           service.search_artist_songs('')
-        }.to raise_error(ArgumentError, /required/)
+        end.to raise_error(ArgumentError, /required/)
       end
 
       it 'raises ArgumentError for too long name' do
-        expect {
+        expect do
           service.search_artist_songs('a' * 101)
-        }.to raise_error(ArgumentError, /too long/)
+        end.to raise_error(ArgumentError, /too long/)
       end
 
       it 'raises ArgumentError for invalid page' do
-        expect {
+        expect do
           service.search_artist_songs('Test', page: 0)
-        }.to raise_error(ArgumentError, /positive/)
+        end.to raise_error(ArgumentError, /positive/)
       end
 
       it 'raises ArgumentError for invalid per_page' do
-        expect {
+        expect do
           service.search_artist_songs('Test', per_page: 0)
-        }.to raise_error(ArgumentError, /1-50/)
+        end.to raise_error(ArgumentError, /1-50/)
 
-        expect {
+        expect do
           service.search_artist_songs('Test', per_page: 51)
-        }.to raise_error(ArgumentError, /1-50/)
+        end.to raise_error(ArgumentError, /1-50/)
       end
     end
 
     context 'when cache is down' do
       it 'still works without caching', :vcr do
         # Simulate cache failure
-        allow(Rails.cache).to receive(:read).and_raise(StandardError, "Cache error")
-        allow(Rails.cache).to receive(:write).and_raise(StandardError, "Cache error")
+        allow(Rails.cache).to receive(:read).and_raise(StandardError, 'Cache error')
+        allow(Rails.cache).to receive(:write).and_raise(StandardError, 'Cache error')
         allow(Rails.logger).to receive(:warn)
 
         result = service.search_artist_songs('Kendrick Lamar')
@@ -109,9 +111,9 @@ RSpec.describe GeniusService do
         error.instance_variable_set(:@response, { status: 401 })
         allow(client).to receive(:get).and_raise(error)
 
-        expect {
+        expect do
           service.search_artist_songs('Drake')
-        }.to raise_error(GeniusService::ApiError, /Invalid API credentials/)
+        end.to raise_error(GeniusService::ApiError, /Invalid API credentials/)
       end
 
       it 'raises ApiError for 429 rate limit' do
@@ -119,9 +121,9 @@ RSpec.describe GeniusService do
         error.instance_variable_set(:@response, { status: 429 })
         allow(client).to receive(:get).and_raise(error)
 
-        expect {
+        expect do
           service.search_artist_songs('Drake')
-        }.to raise_error(GeniusService::ApiError, /Rate limit exceeded/)
+        end.to raise_error(GeniusService::ApiError, /Rate limit exceeded/)
       end
 
       it 'raises ApiError for 500 server error' do
@@ -129,25 +131,25 @@ RSpec.describe GeniusService do
           Faraday::ServerError.new('Server error')
         )
 
-        expect {
+        expect do
           service.search_artist_songs('Drake')
-        }.to raise_error(GeniusService::ApiError, /temporarily unavailable/)
+        end.to raise_error(GeniusService::ApiError, /temporarily unavailable/)
       end
 
       it 'raises TimeoutError on request timeout' do
         allow(client).to receive(:get).and_raise(Faraday::TimeoutError.new('timeout'))
 
-        expect {
+        expect do
           service.search_artist_songs('Drake')
-        }.to raise_error(GeniusService::TimeoutError, /timed out/)
+        end.to raise_error(GeniusService::TimeoutError, /timed out/)
       end
 
       it 'raises ApiError on connection failure' do
         allow(client).to receive(:get).and_raise(Faraday::ConnectionFailed.new('connection failed'))
 
-        expect {
+        expect do
           service.search_artist_songs('Drake')
-        }.to raise_error(GeniusService::ApiError, /Unable to connect/)
+        end.to raise_error(GeniusService::ApiError, /Unable to connect/)
       end
     end
 
@@ -186,9 +188,9 @@ RSpec.describe GeniusService do
           .and_raise(Faraday::ServerError.new('API is down'))
 
         # First request with no cache should fail
-        expect {
+        expect do
           service.search_artist_songs('Drake')
-        }.to raise_error(GeniusService::ApiError, /temporarily unavailable/)
+        end.to raise_error(GeniusService::ApiError, /temporarily unavailable/)
       end
 
       it 'serves stale cache on timeout errors' do

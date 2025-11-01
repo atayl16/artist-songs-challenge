@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Api
   module V1
     class ArtistsController < ApplicationController
@@ -21,7 +23,7 @@ module Api
         Rails.logger.error(e.backtrace.join("\n"))
 
         render json: {
-          error: "An unexpected error occurred. Please try again later."
+          error: 'An unexpected error occurred. Please try again later.'
         }, status: :internal_server_error
       end
 
