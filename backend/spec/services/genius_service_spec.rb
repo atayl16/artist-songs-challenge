@@ -150,5 +150,100 @@ RSpec.describe GeniusService do
         }.to raise_error(GeniusService::ApiError, /Unable to connect/)
       end
     end
+
+    context 'API resilience with name→ID mapping cache' do
+      it 'serves stale cache when API is down but cache exists' do
+        Rails.cache.clear
+
+        # First request - populate both caches (name→ID mapping and songs cache)
+        VCR.use_cassette('genius_service/search_artist_songs/with_valid_artist') do
+          result1 = service.search_artist_songs('Kendrick Lamar')
+          expect(result1[:meta][:cached]).to be false
+          expect(result1[:meta][:stale]).to be false
+          expect(result1[:meta][:api_unavailable]).to be false
+        end
+
+        # Simulate API outage by stubbing the find_artist call to raise an error
+        allow_any_instance_of(Faraday::Connection).to receive(:get)
+          .and_raise(Faraday::ServerError.new('API is down'))
+
+        # Second request - should serve stale cache despite API outage
+        result2 = service.search_artist_songs('Kendrick Lamar')
+
+        expect(result2[:artist][:name]).to eq('Kendrick Lamar')
+        expect(result2[:songs]).to be_an(Array)
+        expect(result2[:songs].length).to be > 0
+        expect(result2[:meta][:cached]).to be true
+        expect(result2[:meta][:stale]).to be true
+        expect(result2[:meta][:api_unavailable]).to be true
+      end
+
+      it 'raises error when API is down and no cache exists' do
+        Rails.cache.clear
+
+        # Stub API to raise error
+        allow_any_instance_of(Faraday::Connection).to receive(:get)
+          .and_raise(Faraday::ServerError.new('API is down'))
+
+        # First request with no cache should fail
+        expect {
+          service.search_artist_songs('Drake')
+        }.to raise_error(GeniusService::ApiError, /temporarily unavailable/)
+      end
+
+      it 'serves stale cache on timeout errors' do
+        Rails.cache.clear
+
+        # First request - populate caches
+        VCR.use_cassette('genius_service/search_artist_songs/with_valid_artist') do
+          service.search_artist_songs('Kendrick Lamar')
+        end
+
+        # Simulate timeout
+        allow_any_instance_of(Faraday::Connection).to receive(:get)
+          .and_raise(Faraday::TimeoutError.new('timeout'))
+
+        # Should serve stale cache
+        result = service.search_artist_songs('Kendrick Lamar')
+        expect(result[:meta][:stale]).to be true
+        expect(result[:meta][:api_unavailable]).to be true
+      end
+
+      it 'normalizes artist names in name→ID cache' do
+        Rails.cache.clear
+
+        # First request with normal case
+        VCR.use_cassette('genius_service/search_artist_songs/with_valid_artist') do
+          service.search_artist_songs('Kendrick Lamar')
+        end
+
+        # Simulate API outage
+        allow_any_instance_of(Faraday::Connection).to receive(:get)
+          .and_raise(Faraday::ServerError.new('API is down'))
+
+        # Second request with different case should still find cached mapping
+        result = service.search_artist_songs('KENDRICK LAMAR')
+        expect(result[:artist][:name]).to eq('Kendrick Lamar')
+        expect(result[:meta][:stale]).to be true
+      end
+
+      it 'returns fresh data when API recovers' do
+        Rails.cache.clear
+
+        # First request - populate caches
+        VCR.use_cassette('genius_service/search_artist_songs/with_valid_artist') do
+          result1 = service.search_artist_songs('Kendrick Lamar')
+          expect(result1[:meta][:stale]).to be false
+        end
+
+        # API should work normally with cached songs (from cache) but fresh artist data
+        VCR.use_cassette('genius_service/search_artist_songs/with_valid_artist') do
+          result2 = service.search_artist_songs('Kendrick Lamar')
+          expect(result2[:meta][:cached]).to be true  # Songs from cache
+          expect(result2[:meta][:stale]).to be false  # Not stale (API is up)
+          expect(result2[:meta][:api_unavailable]).to be false
+        end
+      end
+    end
   end
 end

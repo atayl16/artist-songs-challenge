@@ -2,6 +2,7 @@ class GeniusService
   BASE_URL = ENV.fetch("GENIUS_API_BASE_URL", "https://api.genius.com")
   TIMEOUT = 10
   CACHE_TTL = 1.hour.to_i
+  NAME_MAPPING_CACHE_TTL = 24.hours.to_i  # Artist name→ID mappings are stable
   PER_PAGE = 50  # Genius API maximum
   CACHE_VERSION = "v1"  # Increment when response format changes
 
@@ -25,8 +26,36 @@ class GeniusService
   def search_artist_songs(artist_name, page: 1, per_page: PER_PAGE)
     validate_input!(artist_name, page, per_page)
 
-    # Find artist first to get canonical ID
+    # Try to get artist ID from name→ID mapping cache for resilience
+    cached_mapping = get_cached_artist_id(artist_name)
+
+    if cached_mapping
+      # We have a cached name→ID mapping, check if we have cached songs
+      cached_songs = fetch_from_cache(cached_mapping[:artist_id], page, per_page)
+
+      if cached_songs
+        # We have cached songs! Try to refresh artist data, but fallback to cache on API failure
+        begin
+          artist = find_artist(artist_name)
+          # API is up, update mapping and return fresh artist data with cached songs
+          store_artist_id_mapping(artist_name, artist["id"], artist["name"])
+          return cached_songs.merge(artist: { name: artist["name"], id: artist["id"] })
+        rescue ApiError, TimeoutError => e
+          # API is down, serve stale cache with warning flags
+          Rails.logger.warn("API unavailable, serving stale cache: #{e.message}")
+          return cached_songs.merge(
+            artist: { name: cached_mapping[:artist_name], id: cached_mapping[:artist_id] },
+            meta: cached_songs[:meta].merge(stale: true, api_unavailable: true)
+          )
+        end
+      end
+    end
+
+    # No cached mapping or no cached songs - do normal flow
     artist = find_artist(artist_name)
+
+    # Store name→ID mapping for future resilience
+    store_artist_id_mapping(artist_name, artist["id"], artist["name"])
 
     # Check cache by artist ID (prevents collisions for artists with same name)
     cached = fetch_from_cache(artist["id"], page, per_page)
@@ -73,6 +102,30 @@ class GeniusService
     Rails.cache.write(key, data, expires_in: CACHE_TTL)
   rescue => e
     Rails.logger.warn("Failed to cache: #{e.message}")
+    # Don't fail the request if caching fails
+  end
+
+  # Name→ID mapping cache for API resilience
+  def artist_name_mapping_key(artist_name)
+    # Normalize name for consistent cache keys (downcase, strip)
+    normalized = artist_name.strip.downcase
+    "#{CACHE_VERSION}:genius:name_to_id:#{normalized}"
+  end
+
+  def get_cached_artist_id(artist_name)
+    key = artist_name_mapping_key(artist_name)
+    Rails.cache.read(key)&.deep_symbolize_keys
+  rescue => e
+    Rails.logger.warn("Failed to read name mapping cache: #{e.message}")
+    nil
+  end
+
+  def store_artist_id_mapping(artist_name, artist_id, canonical_name)
+    key = artist_name_mapping_key(artist_name)
+    mapping = { artist_id: artist_id, artist_name: canonical_name }
+    Rails.cache.write(key, mapping, expires_in: NAME_MAPPING_CACHE_TTL)
+  rescue => e
+    Rails.logger.warn("Failed to cache name mapping: #{e.message}")
     # Don't fail the request if caching fails
   end
 
@@ -157,7 +210,9 @@ class GeniusService
       },
       meta: {
         fetched_at: Time.current,
-        cached: false
+        cached: false,
+        stale: false,
+        api_unavailable: false
       }
     }
   end
