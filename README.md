@@ -31,13 +31,16 @@ A Rails + React application that searches for songs by artist using the Genius A
 # 1. Clone and setup
 git clone <your-repo-url>
 cd artist-songs-challenge
-cp .env.example .env
-# Edit .env and add your GENIUS_API_KEY from https://genius.com/api-clients
 
-# 2. Start everything
+# 2. Setup environment files
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env.local
+# Edit backend/.env and add your GENIUS_API_KEY from https://genius.com/api-clients
+
+# 3. Start everything
 docker-compose up
 
-# 3. Open your browser
+# 4. Open your browser
 # Frontend: http://localhost:3000
 # Backend API: http://localhost:3001
 ```
