@@ -1,5 +1,16 @@
 # Development Tasks & Design Decisions
 
+## Table of Contents
+
+- [✅ Completed (MVP)](#-completed-mvp)
+- [Design Decisions](#design-decisions)
+- [📋 Future Improvements](#-future-improvements)
+- [Why NOT Included in MVP](#why-not-included-in-mvp)
+- [Testing Strategy](#testing-strategy)
+- [Deployment Considerations](#deployment-considerations)
+
+---
+
 ## ✅ Completed (MVP)
 
 ### Backend
