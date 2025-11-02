@@ -9,8 +9,7 @@ A Rails + React application that searches for songs by artist using the Genius A
 - [Manual Setup](#manual-setup-without-docker)
 - [Architecture](#architecture)
 - [API Documentation](#api-documentation)
-- [Design Decisions](#design-decisions)
-- [Production Considerations](#production-considerations)
+- [Architecture & Design](#architecture--design)
 - [Troubleshooting](#troubleshooting)
 
 ---
@@ -246,46 +245,9 @@ When the Genius API is down but cached data exists, responses will have `cached:
 | 502 | Bad Gateway | Genius API error |
 | 504 | Gateway Timeout | Request timed out |
 
-## Design Decisions
+## Architecture & Design
 
-### Why No Database?
-The Genius API is the authoritative source. Adding a database would introduce sync complexity without clear benefit for this use case. Redis caching provides performance benefits without the overhead.
-
-**When to add:** If we need search analytics, user preferences, or offline capability.
-
-### Why Redis Caching Per Page?
-Large artists (300+ songs) would timeout if fetching all at once. Paginated caching gives fast responses and better UX.
-
-**Cache key pattern:** `v1:genius:artist:id:{artist_id}:p{page}:pp{per_page}`
-
-### Why 50 Songs Per Page?
-Balance between API calls and UX. Loads in <2 seconds and fills the screen. This is also the Genius API maximum.
-
-### Why "Load More" vs Infinite Scroll?
-Simpler implementation, clearer UX, better accessibility, easier to test.
-
-### Why Rate Limiting at 10/min?
-Protects Genius API quota. Search is an expensive operation. Normal users won't hit this limit.
-
-## Production Considerations
-
-This MVP demonstrates production-ready patterns but would need these additions for true production deployment:
-
-### High Priority
-- [ ] Circuit breaker pattern (fail fast when API down)
-- [ ] Background jobs (Sidekiq) for large fetches
-- [ ] Monitoring (error tracking, performance metrics)
-- [ ] Health check endpoint
-- [ ] Structured logging (Lograge)
-
-### Medium Priority
-- [ ] Database for search analytics
-- [ ] Longer cache TTL for established artists
-- [ ] API response compression
-- [ ] Feature flags (Flipper)
-- [ ] CI/CD pipeline (GitHub Actions)
-
-### See [TASKS.md](TASKS.md) for complete list
+For detailed information about design decisions, architecture patterns, and production considerations, see [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Troubleshooting
 
